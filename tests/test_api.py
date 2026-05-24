@@ -1,3 +1,4 @@
+from core.config import settings
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -32,6 +33,7 @@ def setup_db():
 def test_create_project():
     response = client.post(
         "/v1/projects",
+        headers={"X-API-Key": settings.API_KEY},
         json={"name": "Test Project", "micro_market": "Test Market", "base_price_sqft": 5000, "possession_year": 2027, "amenities": "None"}
     )
     assert response.status_code == 200
@@ -41,11 +43,13 @@ def test_capture_lead():
     # First create project
     client.post(
         "/v1/projects",
+        headers={"X-API-Key": settings.API_KEY},
         json={"name": "Test Project", "micro_market": "Test Market", "base_price_sqft": 5000, "possession_year": 2027, "amenities": "None"}
     )
 
     response = client.post(
         "/v1/leads",
+        headers={"X-API-Key": settings.API_KEY},
         json={"name": "Lead Test", "phone_number": "1234567890", "project_name": "Test Project"}
     )
     assert response.status_code == 200

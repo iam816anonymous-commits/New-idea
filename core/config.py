@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./proppulse.db"
 
+    # Security
+    API_KEY: str = "pp_secret_v1_dev_key"
+
     # Mock Config
     WHATSAPP_SIMULATION_DELAY: float = 1.5
 

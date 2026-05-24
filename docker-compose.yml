@@ -1,0 +1,20 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./proppulse.db
+      - API_KEY=pp_secret_v1_prod_key
+    volumes:
+      - .:/app
+
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    command: streamlit run dashboard/app.py --server.port 8501
+    depends_on:
+      - api
+    volumes:
+      - .:/app
