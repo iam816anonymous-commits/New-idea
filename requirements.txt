@@ -8,3 +8,6 @@ requests
 pydantic
 pydantic-settings
 python-multipart
+pytest
+httpx
+pytest-asyncio

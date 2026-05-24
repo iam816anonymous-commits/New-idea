@@ -7,6 +7,7 @@ class Project(Base):
     __tablename__ = "projects"
 
     id = Column(Integer, primary_key=True, index=True)
+    brokerage_id = Column(String, index=True, default="default")
     name = Column(String, index=True)
     micro_market = Column(String, index=True)
     base_price_sqft = Column(Float)
@@ -22,10 +23,12 @@ class Lead(Base):
     __tablename__ = "leads"
 
     id = Column(Integer, primary_key=True, index=True)
+    brokerage_id = Column(String, index=True, default="default")
     name = Column(String, index=True)
     phone_number = Column(String, index=True)
     email = Column(String, index=True, nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"))
+    source = Column(String, default="Meta Ads") # Meta Ads, Google Ads, Organic, Manual
     status = Column(String, default="New") # New, Contacted, Qualified, Site Visit Scheduled, Lost
     qualification_score = Column(Integer, default=0)
     chat_history = Column(Text, nullable=True)
@@ -38,6 +41,7 @@ class AdIntelligence(Base):
     __tablename__ = "ad_intelligence"
 
     id = Column(Integer, primary_key=True, index=True)
+    brokerage_id = Column(String, index=True, default="default")
     builder = Column(String, index=True)
     project_name = Column(String)
     micro_market = Column(String, index=True)
