@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from core.database import Base, get_db
 from api.main import app
+from unittest.mock import patch
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
@@ -30,27 +31,43 @@ def setup_db():
     yield
     Base.metadata.drop_all(bind=engine)
 
+def test_health():
+    response = client.get("/v1/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
+
 def test_create_project():
     response = client.post(
         "/v1/projects",
-        headers={"X-API-Key": settings.API_KEY},
+        headers={"X-API-Key": settings.API_KEY, "X-Brokerage-ID": "test_broker"},
         json={"name": "Test Project", "micro_market": "Test Market", "base_price_sqft": 5000, "possession_year": 2027, "amenities": "None"}
     )
     assert response.status_code == 200
     assert response.json()["name"] == "Test Project"
 
 def test_capture_lead():
-    # First create project
-    client.post(
-        "/v1/projects",
-        headers={"X-API-Key": settings.API_KEY},
-        json={"name": "Test Project", "micro_market": "Test Market", "base_price_sqft": 5000, "possession_year": 2027, "amenities": "None"}
-    )
+    # Mock background tasks to avoid DB race conditions in tests
+    with patch("fastapi.BackgroundTasks.add_task") as mock_add_task:
+        # First create project
+        client.post(
+            "/v1/projects",
+            headers={"X-API-Key": settings.API_KEY, "X-Brokerage-ID": "test_broker"},
+            json={"name": "Test Project", "micro_market": "Test Market", "base_price_sqft": 5000, "possession_year": 2027, "amenities": "None"}
+        )
 
+        response = client.post(
+            "/v1/leads",
+            headers={"X-API-Key": settings.API_KEY, "X-Brokerage-ID": "test_broker"},
+            json={"name": "Lead Test", "phone_number": "+919876543210", "project_name": "Test Project"}
+        )
+        assert response.status_code == 200
+        assert "lead_id" in response.json()
+        assert mock_add_task.called
+
+def test_invalid_phone():
     response = client.post(
         "/v1/leads",
         headers={"X-API-Key": settings.API_KEY},
-        json={"name": "Lead Test", "phone_number": "1234567890", "project_name": "Test Project"}
+        json={"name": "Fail", "phone_number": "invalid", "project_name": "Test"}
     )
-    assert response.status_code == 200
-    assert "lead_id" in response.json()
+    assert response.status_code == 422
