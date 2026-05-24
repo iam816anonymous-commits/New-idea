@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import random
 from sqlalchemy.orm import Session, joinedload
 from core.database import SessionLocal
 from api import models
@@ -44,7 +43,12 @@ with tab1:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total Leads", len(leads))
     c2.metric("Qualified", len([l for l in leads if l.status == "Qualified"]))
-    c3.metric("Site Visits", random.randint(2, 5) if leads else 0)
+
+    # Calculate avg response time
+    resp_times = [l.response_time_seconds for l in leads if l.response_time_seconds is not None]
+    avg_resp = f"{int(sum(resp_times)/len(resp_times))}s" if resp_times else "N/A"
+    c3.metric("Avg Response Time", avg_resp)
+
     c4.metric("Avg Score", f"{int(sum([l.qualification_score for l in leads])/len(leads)) if leads else 0}%")
 
     col1, col2 = st.columns([1, 1])
@@ -58,6 +62,7 @@ with tab1:
                 "Project": l.project.name if l.project else "N/A",
                 "Status": l.status,
                 "Score": l.qualification_score,
+                "Source": l.source
             } for l in leads])
             st.dataframe(df_leads, use_container_width=True, hide_index=True)
         else:
@@ -117,11 +122,11 @@ with tab3:
 with tab4:
     st.header("Demand Analytics")
     if leads:
-        st.subheader("Budget Distribution")
-        df_status = pd.DataFrame([{"Status": l.status} for l in leads])
-        st.bar_chart(df_status["Status"].value_counts())
+        st.subheader("Lead Source Distribution")
+        df_source = pd.DataFrame([{"Source": l.source} for l in leads])
+        st.bar_chart(df_source["Source"].value_counts())
 
-        st.subheader("Micro-market Heatmap (Simulated)")
+        st.subheader("Micro-market Demand (Simulated Heatmap)")
         st.map(pd.DataFrame({
             'lat': [12.9716, 12.9279, 12.9668],
             'lon': [77.5946, 77.6271, 77.7499]

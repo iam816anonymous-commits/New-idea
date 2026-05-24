@@ -33,6 +33,7 @@ class Lead(Base):
     qualification_score = Column(Integer, default=0)
     chat_history = Column(Text, nullable=True)
     budget_range = Column(String, nullable=True)
+    response_time_seconds = Column(Integer, nullable=True) # To track lead velocity
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="leads")
