@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+streamlit
+pandas
+requests
+pydantic
+pydantic-settings
+python-multipart
