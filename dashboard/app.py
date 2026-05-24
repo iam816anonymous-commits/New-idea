@@ -1,78 +1,88 @@
 import streamlit as st
 import pandas as pd
-import requests
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from core.database import SessionLocal
 from api import models
 
-st.set_page_config(page_title="PropPulse AI - Command Center", layout="wide")
+st.set_page_config(page_title="PropPulse OS - Growth Engine", layout="wide")
 
-st.title("🚀 PropPulse AI - Real Estate Growth OS")
-st.subheader("Lead Intelligence & Automation Dashboard")
+st.title("🚀 PropPulse OS - Real Estate Growth Engine")
 
 def get_data():
     db = SessionLocal()
-    from sqlalchemy.orm import joinedload
-    leads = db.query(models.Lead).options(joinedload(models.Lead.project)).all()
-    projects = db.query(models.Project).all()
-    db.close()
-    return leads, projects
+    try:
+        leads = db.query(models.Lead).options(joinedload(models.Lead.project)).all()
+        projects = db.query(models.Project).all()
+        ads = db.query(models.AdIntelligence).all()
+        return leads, projects, ads
+    finally:
+        db.close()
 
-leads, projects = get_data()
+leads, projects, ads = get_data()
 
-# Sidebar Metrics
-st.sidebar.header("Pipeline Metrics")
-st.sidebar.metric("Total Leads", len(leads))
-st.sidebar.metric("Qualified Leads", len([l for l in leads if l.status == "Qualified"]))
-st.sidebar.metric("Active Projects", len(projects))
+tab1, tab2, tab3 = st.tabs(["📊 Lead Engine", "🕵️ Ad Intelligence", "🏗️ Project Knowledge"])
 
-# Main Dashboard
-col1, col2 = st.columns(2)
+with tab1:
+    st.header("Lead Qualification Pipeline")
 
-with col1:
-    st.write("### Active Leads")
-    if leads:
-        lead_data = []
-        for l in leads:
-            lead_data.append({
+    # Metrics
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Total Leads", len(leads))
+    c2.metric("Qualified", len([l for l in leads if l.status == "Qualified"]))
+    c3.metric("Avg Score", f"{int(sum([l.qualification_score for l in leads])/len(leads)) if leads else 0}%")
+
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.subheader("Active Lead Tracker")
+        if leads:
+            df_leads = pd.DataFrame([{
                 "ID": l.id,
                 "Name": l.name,
                 "Project": l.project.name if l.project else "N/A",
                 "Status": l.status,
                 "Score": l.qualification_score,
-                "Created At": l.created_at
-            })
-        df_leads = pd.DataFrame(lead_data)
-        st.dataframe(df_leads, use_container_width=True)
+                "Created At": l.created_at.strftime("%Y-%m-%d %H:%M")
+            } for l in leads])
+            st.dataframe(df_leads, use_container_width=True)
+        else:
+            st.info("No leads captured.")
+
+    with col2:
+        st.subheader("Chat Review")
+        if leads:
+            selected_lead_id = st.selectbox("Select Lead", [l.id for l in leads], format_func=lambda x: next(l.name for l in leads if l.id == x))
+            selected_lead = next(l for l in leads if l.id == selected_lead_id)
+            st.text_area("WhatsApp History", selected_lead.chat_history or "No history", height=300)
+        else:
+            st.info("No leads.")
+
+with tab2:
+    st.header("Competitor Ad Monitoring")
+    if ads:
+        df_ads = pd.DataFrame([{
+            "Builder": a.builder,
+            "Project": a.project_name,
+            "Micro Market": a.micro_market,
+            "Offer": a.offer,
+            "Hook": a.hook
+        } for a in ads])
+        st.table(df_ads)
     else:
-        st.info("No leads captured yet.")
+        st.info("No ad intelligence gathered yet.")
 
-with col2:
-    st.write("### Qualification Distribution")
-    if leads:
-        df_leads = pd.DataFrame([{"Status": l.status} for l in leads])
-        status_counts = df_leads["Status"].value_counts()
-        st.bar_chart(status_counts)
+with tab3:
+    st.header("Project Knowledge Base")
+    if projects:
+        for p in projects:
+            with st.expander(f"🏢 {p.name} - {p.micro_market}"):
+                st.write(f"**Base Price:** ₹{p.base_price_sqft}/sqft")
+                st.write(f"**Possession:** {p.possession_year}")
+                st.write(f"**Amenities:** {p.amenities}")
+                if p.amenities_embeddings:
+                    st.info("✅ Vector Embeddings Generated")
     else:
-        st.info("No data for charts.")
+        st.info("No projects ingested.")
 
-st.write("### Lead Details & Chat History")
-if leads:
-    selected_lead_id = st.selectbox("Select a lead to view details", [l.id for l in leads], format_func=lambda x: next(l.name for l in leads if l.id == x))
-    selected_lead = next(l for l in leads if l.id == selected_lead_id)
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.write(f"**Name:** {selected_lead.name}")
-        st.write(f"**Phone:** {selected_lead.phone_number}")
-        st.write(f"**Email:** {selected_lead.email}")
-        st.write(f"**Budget:** {selected_lead.budget_range or 'N/A'}")
-
-    with c2:
-        st.write("**WhatsApp Chat History:**")
-        st.text_area("History", selected_lead.chat_history or "No history yet", height=200)
-else:
-    st.info("Capture leads to see details.")
-
-if st.button("Refresh Data"):
+if st.button("🔄 Refresh OS Data"):
     st.rerun()

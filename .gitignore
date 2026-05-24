@@ -11,5 +11,5 @@ venv.bak/
 *.db
 *.log
 .pytest_cache/
-alembic/versions/*.py
-!alembic/versions/.gitkeep
+# Keep alembic versions
+!alembic/versions/

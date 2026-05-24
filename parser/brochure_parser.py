@@ -1,12 +1,13 @@
 import json
 import random
+from core.database import SessionLocal
+from api import models
 
 def mock_extract_project_details(file_path):
     """
     Simulates extracting project details from a brochure PDF or image.
     In a real scenario, this would use OCR and LLMs.
     """
-    # Sample data to return
     projects = [
         {
             "name": "Luxury Sarjapur Villas",
@@ -24,12 +25,26 @@ def mock_extract_project_details(file_path):
         }
     ]
 
-    # Simulate some processing time and return a random sample or based on filename
     project_data = random.choice(projects)
     print(f"Extracted data from {file_path}: {project_data['name']}")
+
+    # Persist to DB
+    db = SessionLocal()
+    try:
+        # Check if project exists
+        db_project = db.query(models.Project).filter(models.Project.name == project_data["name"]).first()
+        if not db_project:
+            db_project = models.Project(**project_data)
+            # Simulate embedding generation
+            db_project.amenities_embeddings = json.dumps([random.random() for _ in range(8)])
+            db.add(db_project)
+            db.commit()
+            print(f"Saved new project: {project_data['name']}")
+    finally:
+        db.close()
+
     return project_data
 
 if __name__ == "__main__":
-    # Test the parser
-    data = mock_extract_project_details("sample_brochure.pdf")
-    print(json.dumps(data, indent=2))
+    mock_extract_project_details("brochure_1.pdf")
+    mock_extract_project_details("brochure_2.pdf")

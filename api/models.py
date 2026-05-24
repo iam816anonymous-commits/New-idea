@@ -12,6 +12,8 @@ class Project(Base):
     base_price_sqft = Column(Float)
     possession_year = Column(Integer)
     amenities = Column(Text)
+    # Simulated vector column for embeddings (storing as Text for SQLite)
+    amenities_embeddings = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     leads = relationship("Lead", back_populates="project")
@@ -31,3 +33,15 @@ class Lead(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="leads")
+
+class AdIntelligence(Base):
+    __tablename__ = "ad_intelligence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    builder = Column(String, index=True)
+    project_name = Column(String)
+    micro_market = Column(String, index=True)
+    offer = Column(Text)
+    hook = Column(Text)
+    creative_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
