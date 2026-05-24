@@ -1,23 +1,25 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from core.database import Base
 
-# Note: In a real PostgreSQL environment, we would use:
-# from pgvector.sqlalchemy import Vector
-# For this SQLite/MVP fallback, we simulate with a Text column.
+class Tenant(Base):
+    __tablename__ = "tenants"
+    id = Column(Integer, primary_key=True, index=True)
+    brokerage_name = Column(String, unique=True, index=True)
+    api_key = Column(String, unique=True, index=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class Project(Base):
     __tablename__ = "projects"
-
     id = Column(Integer, primary_key=True, index=True)
-    brokerage_id = Column(String, index=True, default="default")
+    brokerage_id = Column(Integer, ForeignKey("tenants.id"))
     name = Column(String, index=True)
     micro_market = Column(String, index=True)
     base_price_sqft = Column(Float)
     possession_year = Column(Integer)
     amenities = Column(Text)
-    # simulated_vector: Column(Vector(384)) if postgres else Text
     amenities_embeddings = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -25,9 +27,8 @@ class Project(Base):
 
 class Lead(Base):
     __tablename__ = "leads"
-
     id = Column(Integer, primary_key=True, index=True)
-    brokerage_id = Column(String, index=True, default="default")
+    brokerage_id = Column(Integer, ForeignKey("tenants.id"))
     name = Column(String, index=True)
     phone_number = Column(String, index=True)
     email = Column(String, index=True, nullable=True)
@@ -45,13 +46,20 @@ class Lead(Base):
 
 class AdIntelligence(Base):
     __tablename__ = "ad_intelligence"
-
     id = Column(Integer, primary_key=True, index=True)
-    brokerage_id = Column(String, index=True, default="default")
+    brokerage_id = Column(Integer, ForeignKey("tenants.id"))
     builder = Column(String, index=True)
     project_name = Column(String)
     micro_market = Column(String, index=True)
     offer = Column(Text)
     hook = Column(Text)
     creative_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    brokerage_id = Column(Integer, ForeignKey("tenants.id"))
+    event_type = Column(String) # e.g., LEAD_QUALIFIED, PROJECT_CREATED
+    details = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)

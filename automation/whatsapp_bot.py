@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from core.database import SessionLocal
 from api import models
 from core.scoring import calculate_lead_score
+from automation.crm_sync import notify_external_crm
 
 def trigger_whatsapp_qualification(lead_id: int):
     """
@@ -47,6 +48,9 @@ def trigger_whatsapp_qualification(lead_id: int):
             lead.status = "Qualified"
             lead.budget_range = "1.5Cr - 2.5Cr"
             response = "Great! I've sent the pricing matrix to your email. Would you like to schedule a site visit this weekend?"
+
+            # CRM Sync
+            notify_external_crm(lead.id, {"name": lead.name, "score": score}, "https://mock-crm.com/webhook")
         elif score >= 40:
             lead.status = "Interested"
             response = "Understood. I'll share the floor plans for your reference. Any specific budget you have in mind?"
