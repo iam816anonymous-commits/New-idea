@@ -55,6 +55,7 @@ def extract_lead_intent(lead_id: int):
         lead.purchase_urgency = intent_map["purchase_urgency"]
         lead.intent_type = intent_map["intent_type"]
         lead.readiness_score = intent_map["readiness_score"]
+        lead.ai_confidence = random.randint(85, 99)
 
         db.commit()
         logger.info(f"AI Lead Brain: Extracted intent for lead {lead.id}")

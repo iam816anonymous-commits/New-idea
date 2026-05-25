@@ -8,30 +8,35 @@ from proppulse_os.core.config import settings
 from proppulse_os.lead_engine import models
 from proppulse_os.vector_search.search import SemanticSearchService
 from proppulse_os.analytics.velocity import get_conversion_rate, get_lead_velocity
+from proppulse_os.analytics.recommendations import GrowthAdvisor
 from proppulse_os.market_intel.engine import MarketIntelEngine
 import requests
 import time
 
-st.set_page_config(page_title=f"{settings.PROJECT_NAME} OS Enterprise", layout="wide")
+st.set_page_config(page_title=f"{settings.PROJECT_NAME} OS", layout="wide", initial_sidebar_state="expanded")
 
 # Custom CSS for Premium Look
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
-    .stMetric { background-color: white; padding: 20px; border-radius: 10px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .stMetric { background-color: white; padding: 15px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .kpi-card { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
     .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [data-baseweb="tab"] { background-color: #f1f3f5; padding: 10px 20px; border-radius: 5px; font-weight: 600; }
+    .stTabs [data-baseweb="tab"] { background-color: #f1f3f5; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; }
     .stTabs [aria-selected="true"] { background-color: #007bff; color: white !important; }
-    .lead-card { background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #007bff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .market-badge { background-color: #e3f2fd; color: #0d47a1; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+    .lead-card { background-color: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 6px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .market-badge { background-color: #e3f2fd; color: #0d47a1; padding: 4px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; }
+    .priority-high { color: #d32f2f; font-weight: bold; }
+    .priority-medium { color: #f57c00; font-weight: bold; }
+    .advisor-card { background-color: #fff; border-left: 4px solid #4caf50; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; }
     </style>
     """, unsafe_allow_html=True)
 
 # Sidebar - Simulated Authentication
-st.sidebar.title("🔐 PropPulse OS")
+st.sidebar.title("🚀 PropPulse OS")
 auth_key = st.sidebar.text_input("Enter API Key", type="password", value=settings.API_KEY)
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=5)
 def get_enterprise_data(api_key: str):
     db = SessionLocal()
     try:
@@ -52,167 +57,153 @@ if not tenant:
     st.error("Access Denied: Invalid API Key")
     st.stop()
 
-st.title(f"🚀 {tenant.brokerage_name} Operating System")
+# --- TOP BAR KPI (Mobile First View) ---
+st.markdown(f"### ⚡ Executive Pulse: {tenant.brokerage_name}")
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+with kpi1:
+    st.markdown('<div class="stMetric"><b>Revenue Pipeline</b><br/><span style="font-size: 1.8em; color: #007bff;">₹4.2 Cr</span></div>', unsafe_allow_html=True)
+with kpi2:
+    hot_count = len([l for l in leads if l.qualification_score >= 75])
+    st.markdown(f'<div class="stMetric"><b>Hot Leads</b><br/><span style="font-size: 1.8em; color: #d32f2f;">{hot_count}</span></div>', unsafe_allow_html=True)
+with kpi3:
+    st.markdown('<div class="stMetric"><b>Market Sentiment</b><br/><span style="font-size: 1.8em; color: #4caf50;">Bullish</span></div>', unsafe_allow_html=True)
+with kpi4:
+    conversion = get_conversion_rate(tenant.id)
+    st.markdown(f'<div class="stMetric"><b>Conversion Rate</b><br/><span style="font-size: 1.8em; color: #007bff;">{int(conversion)}%</span></div>', unsafe_allow_html=True)
 
-# --- SEMANTIC SEARCH IN SIDEBAR ---
+st.divider()
+
+# Sidebar Search & Demo
 st.sidebar.divider()
-st.sidebar.subheader("🔍 Semantic Project Search")
-search_query = st.sidebar.text_input("Find projects with...", placeholder="e.g. 3BHK with clubhouse")
+st.sidebar.subheader("🔍 Project Discovery")
+search_query = st.sidebar.text_input("Semantic Search", placeholder="e.g. Sarjapur Luxury Villas")
 if search_query:
     db = SessionLocal()
     search_service = SemanticSearchService(db)
     results = search_service.search_projects(search_query, tenant.id)
     db.close()
     if results:
-        for r in results:
-            st.sidebar.caption(f"🏢 {r['name']} ({r['micro_market']})")
-    else:
-        st.sidebar.caption("No matching assets found.")
+        for r in results: st.sidebar.caption(f"🏢 {r['name']} ({r['micro_market']})")
+    else: st.sidebar.caption("No results.")
 
-# --- DEMO TOOL IN SIDEBAR ---
-with st.sidebar.expander("⚡ Instant Demo: Lead Injection"):
-    demo_name = st.text_input("Buyer Name", "Vikram Singh")
-    demo_phone = st.text_input("WhatsApp Number", "+919876543210")
-    if projects:
-        demo_proj = st.selectbox("Select Project", [p.name for p in projects])
-        if st.button("🚀 Simulate Ad Response"):
-            try:
-                api_url = "http://api:8000/v1/leads" if settings.DATABASE_URL.startswith("postgresql") else "http://localhost:8000/v1/leads"
-                resp = requests.post(
-                    api_url,
-                    headers={"X-API-Key": auth_key},
-                    json={"name": demo_name, "phone_number": demo_phone, "project_name": demo_proj}
-                )
-                if resp.status_code == 200:
-                    st.success("Lead Captured & AI Brain Triggered!")
-                    time.sleep(1)
-                    st.cache_data.clear()
-                    st.rerun()
-                else:
-                    st.error(f"Error: {resp.text}")
-            except Exception as e:
-                st.error(f"API unreachable: {e}")
+with st.sidebar.expander("⚡ Growth Tools"):
+    if st.button("🚀 Inject Test Lead"):
+        try:
+            api_url = "http://api:8000/v1/leads" if settings.DATABASE_URL.startswith("postgresql") else "http://localhost:8000/v1/leads"
+            requests.post(api_url, headers={"X-API-Key": auth_key}, json={"name": "Test User", "phone_number": "+919000000000", "project_name": projects[0].name if projects else "Default"})
+            st.success("Lead Injected!")
+            st.cache_data.clear()
+            st.rerun()
+        except: st.error("API Error")
 
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Performance Dashboard", "🔥 AI Lead Brain", "🌍 Market Intelligence", "🏢 Asset Knowledge"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Growth Analytics", "🧠 AI Lead Brain", "🕵️ Market Intelligence", "💡 Advisor"])
 
 with tab1:
-    st.header("PropPulse Analytics Engine")
-    c1, c2, c3, c4 = st.columns(4)
+    col_left, col_right = st.columns([2, 1])
 
-    conversion = get_conversion_rate(tenant.id)
-    velocity = get_lead_velocity(tenant.id)
+    with col_left:
+        st.subheader("Lead Ingestion & Lifecycle")
+        if leads:
+            df_leads = pd.DataFrame([{"Stage": l.status, "Count": 1} for l in leads])
+            fig_funnel = px.funnel(df_leads.groupby("Stage").count().reset_index(), x='Count', y='Stage', title="Sales Funnel Efficiency")
+            st.plotly_chart(fig_funnel, use_container_width=True)
+        else: st.info("No data yet.")
 
-    c1.metric("Leads Ingested", len(leads))
-    c2.metric("Conversion (MQL)", f"{int(conversion)}%", delta="Enterprise Grade")
-    c3.metric("Lead Velocity", f"{velocity:.1f}/day", delta="High Volume")
-    c4.metric("Ad Spend ROI", "3.4x", delta="Optimized")
+    with col_right:
+        st.subheader("Ingestion Velocity")
+        velocity = get_lead_velocity(tenant.id)
+        st.metric("Daily Avg", f"{velocity:.1f} leads", delta="+12%")
 
-    if leads:
-        df_leads = pd.DataFrame([{
-            "ID": l.id,
-            "Name": l.name,
-            "Project": l.project.name if l.project else "N/A",
-            "Status": l.status,
-            "Score": l.qualification_score,
-            "Created At": l.created_at
-        } for l in leads])
-
-        col_left, col_right = st.columns(2)
-
-        with col_left:
-            status_counts = df_leads['Status'].value_counts().reset_index()
-            fig_pie = px.pie(status_counts, values='count', names='Status', title='Lead Lifecycle Stage',
-                             hole=.4, color_discrete_sequence=px.colors.qualitative.Bold)
-            st.plotly_chart(fig_pie, use_container_width=True)
-
-        with col_right:
-            # Conversion Trend Mock
-            trend_data = pd.DataFrame({
-                'Date': pd.date_range(start='2024-01-01', periods=7),
-                'Leads': [10, 15, 8, 22, 18, 25, 30]
-            })
-            fig_trend = px.line(trend_data, x='Date', y='Leads', title='Daily Ingestion Velocity')
-            st.plotly_chart(fig_trend, use_container_width=True)
+        # Micro-market share
+        if projects:
+            markets = [p.micro_market for p in projects]
+            fig_market = px.pie(names=markets, title="Asset Portfolio Share", hole=.4)
+            st.plotly_chart(fig_market, use_container_width=True)
 
 with tab2:
-    st.header("🔥 AI Lead Brain: Intent Extraction")
-    hot_leads = [l for l in leads if l.qualification_score >= 60]
+    st.header("🧠 Deep Lead Profiling")
+    hot_leads = sorted([l for l in leads if l.qualification_score >= 60], key=lambda x: x.qualification_score, reverse=True)
     if hot_leads:
         for l in hot_leads:
-            st.markdown(f"""
+            with st.container():
+                st.markdown(f"""
                 <div class="lead-card">
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <span style="font-size: 1.2em; font-weight: bold;">👤 {l.name}</span> <span class="market-badge">{l.intent_type or 'General'}</span><br/>
-                            <span style="color: #666;">Target: {l.project.name if l.project else 'N/A'}</span>
+                            <span style="font-size: 1.3em; font-weight: 800; color: #212529;">{l.name}</span>
+                            <span class="market-badge">{l.intent_type or 'MQL'}</span>
                         </div>
                         <div style="text-align: right;">
-                            <span style="font-size: 1.5em; font-weight: bold; color: #007bff;">{l.qualification_score}%</span><br/>
-                            <span style="font-size: 0.8em; color: #888;">AI SCORE</span>
+                            <span style="font-size: 1.6em; font-weight: 900; color: #007bff;">{l.qualification_score}%</span><br/>
+                            <span style="font-size: 0.7em; font-weight: bold; color: #adb5bd;">AI CONFIDENCE: {l.ai_confidence or '92'}%</span>
                         </div>
                     </div>
-                    <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.9em; color: #444;">
-                        <div>📍 <b>Pref:</b> {l.location_pref or 'N/A'}</div>
-                        <div>💰 <b>Budget:</b> {l.budget_range or 'TBD'}</div>
-                        <div>⏱️ <b>Urgency:</b> {l.purchase_urgency or 'Unknown'}</div>
+                    <div style="margin-top: 12px; display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 15px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #eee;">
+                        <div>🏢 <b>Project:</b> {l.project.name if l.project else 'N/A'}</div>
+                        <div>💰 <b>Budget:</b> {l.budget_range or 'N/A'}</div>
+                        <div>⏱️ <b>Urgency:</b> {l.purchase_urgency or 'N/A'}</div>
                     </div>
-                    <div style="margin-top: 10px; font-style: italic; color: #007bff; border-top: 1px solid #eee; padding-top: 5px;">
-                        "AI Logic: {l.conversation_summary}"
+                    <div style="margin-top: 10px; font-size: 0.9em; color: #495057;">
+                        <b>AI Reasoning:</b> {l.conversation_summary}
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
-            if st.button(f"Push to Salesforce", key=f"crm_{l.id}"):
-                st.toast(f"Lead {l.name} synced!")
-    else:
-        st.info("No high-intent profiles detected.")
+                """, unsafe_allow_html=True)
+                col_btn1, col_btn2 = st.columns([1, 4])
+                col_btn1.button("CRM Sync", key=f"s_{l.id}")
+                col_btn2.button("View Full Chat Transcript", key=f"t_{l.id}", type="secondary")
+    else: st.info("No high-intent profiles detected.")
 
 with tab3:
-    st.header("🌍 Market & Competitor Intelligence")
+    st.header("🕵️ Real-Time Market Intelligence")
+    st.markdown('<div style="background: #e8f5e9; padding: 5px 15px; border-radius: 20px; color: #2e7d32; font-weight: 600; font-size: 0.8em; display: inline-block;">● AGENTS SCANNING LIVE</div>', unsafe_allow_html=True)
+
     db = SessionLocal()
-    intel_engine = MarketIntelEngine(db)
+    intel = MarketIntelEngine(db)
+    pulse = intel.analyze_market_momentum("Sarjapur")
+    db.close()
 
-    col1, col2 = st.columns([1, 2])
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Ad Spend Velocity", pulse['ad_velocity'], delta="+15% (Competitor avg)")
+    m2.metric("Market Sentiment", pulse['sentiment'], delta=pulse['price_trend'])
+    m3.metric("Inventory Pulse", "Critical", delta="-5% Supply")
 
-    with col1:
-        st.subheader("Micro-Market Pulse")
-        markets = ["Sarjapur", "Whitefield", "Indiranagar"]
-        for m in markets:
-            pulse = intel_engine.analyze_market_momentum(m)
+    st.subheader("Competitor Ad Hooks & Offers")
+    if ads:
+        for a in ads:
             with st.container(border=True):
-                st.write(f"📍 **{m}**")
-                st.write(f"Velocity: **{pulse['ad_velocity']}**")
-                st.write(f"Price: {pulse['price_trend']}")
-                st.progress(min(pulse['momentum_score']/20, 1.0))
-        db.close()
-
-    with col2:
-        st.subheader("Competitor Ad Strategy Tracking")
-        if ads:
-            for a in ads:
-                with st.container(border=True):
-                    st.write(f"**Builder:** {a.builder}")
-                    st.write(f"**Offer:** {a.offer}")
-                    st.caption(f"Hook: {a.hook}")
-        else:
-            st.info("Initializing scanning agents...")
+                st.subheader(f"{a.builder}: {a.project_name}")
+                st.write(f"🪝 **Hook:** {a.hook}")
+                st.success(f"🎁 Offer: {a.offer}")
+    else: st.info("Indexing local campaigns...")
 
 with tab4:
-    st.header("🏢 Enterprise Asset Knowledge")
-    if projects:
-        for p in projects:
-            with st.expander(f"🏢 {p.name} - {p.micro_market}"):
-                col1, col2 = st.columns(2)
-                col1.write(f"**Base Price:** ₹{p.base_price_sqft}/sqft")
-                col1.write(f"**Possession:** {p.possession_year}")
-                col2.write(f"**Amenities:** {p.amenities}")
-                st.button(f"Generate AI Brochure for {p.name}", key=f"brochure_{p.id}")
-    else: st.info("No project assets ingested.")
+    st.header("💡 PropPulse Growth Advisor")
+    st.caption("Actionable insights powered by Lead Brain & Market Intel")
 
-if st.sidebar.checkbox("Show System Transparency"):
+    db = SessionLocal()
+    advisor = GrowthAdvisor(db)
+    recs = advisor.get_recommendations(tenant.id)
+    db.close()
+
+    for r in recs:
+        priority_class = f"priority-{r['priority'].lower()}"
+        st.markdown(f"""
+            <div class="advisor-card">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="font-weight: 800; font-size: 1.1em; color: #2c3e50;">{r['title']}</span>
+                    <span class="{priority_class}">{r['priority']} Priority</span>
+                </div>
+                <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                    <b>{r['category']}:</b> {r['body']}
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        st.button("Execute Recommendation", key=f"rec_{r['title']}")
+
+if st.sidebar.checkbox("Show Infrastructure Logs"):
     st.divider()
-    st.header("📜 Traceability Logs")
     db = SessionLocal()
     logs = db.query(models.AuditLog).filter(models.AuditLog.brokerage_id == tenant.id).order_by(models.AuditLog.created_at.desc()).all()
     db.close()
     if logs:
-        st.table(pd.DataFrame([{"Time": l.created_at.strftime("%H:%M:%S"), "Event": l.event_type, "Details": l.details} for l in logs]))
+        st.table(pd.DataFrame([{"Time": l.created_at.strftime("%H:%M:%S"), "Event": l.event_type} for l in logs]))

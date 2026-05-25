@@ -46,6 +46,7 @@ class Lead(Base):
     intent_type = Column(String, nullable=True) # Investment vs Self-use
     readiness_score = Column(Integer, default=0)
     budget_range = Column(String, nullable=True)
+    ai_confidence = Column(Integer, default=0)
     response_time_seconds = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

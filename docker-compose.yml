@@ -18,5 +18,6 @@ services:
       - api
     environment:
       - DATABASE_URL=sqlite:///./proppulse.db
+      - API_KEY=pp_secret_v1_prod_key
     volumes:
       - .:/app
