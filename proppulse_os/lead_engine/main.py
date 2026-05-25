@@ -6,13 +6,13 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 import uuid
 import time
-from core.database import get_db, engine
-from core.config import settings
-from core.logger import logger
-from api import models
-from core.routing import route_lead
-from core.audit import log_event
-from automation.whatsapp_bot import trigger_whatsapp_qualification
+from proppulse_os.core.database import get_db, engine
+from proppulse_os.core.config import settings
+from proppulse_os.core.logger import logger
+from proppulse_os.lead_engine import models
+from proppulse_os.core.routing import route_lead
+from proppulse_os.core.audit import log_event
+from proppulse_os.agents.whatsapp_bot import trigger_whatsapp_qualification
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
 

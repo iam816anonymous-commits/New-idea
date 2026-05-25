@@ -1,5 +1,5 @@
-from core.database import SessionLocal
-from api import models
+from proppulse_os.core.database import SessionLocal
+from proppulse_os.lead_engine import models
 
 def log_event(tenant_id: int, event_type: str, details: str):
     """Logs critical business events for B2B auditing."""

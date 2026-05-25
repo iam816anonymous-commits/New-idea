@@ -3,8 +3,8 @@ import functools
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from core.config import settings
-from core.logger import logger
+from proppulse_os.core.config import settings
+from proppulse_os.core.logger import logger
 
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 

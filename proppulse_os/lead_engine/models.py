@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from core.database import Base
+from proppulse_os.core.database import Base
 
 class Tenant(Base):
     __tablename__ = "tenants"
@@ -39,6 +39,12 @@ class Lead(Base):
     conversation_summary = Column(String, nullable=True)
     qualification_score = Column(Integer, default=0)
     chat_history = Column(Text, nullable=True)
+
+    # AI Lead Brain profiling
+    location_pref = Column(String, nullable=True)
+    purchase_urgency = Column(String, nullable=True) # e.g., 30 days, 6 months
+    intent_type = Column(String, nullable=True) # Investment vs Self-use
+    readiness_score = Column(Integer, default=0)
     budget_range = Column(String, nullable=True)
     response_time_seconds = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

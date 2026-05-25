@@ -1,10 +1,10 @@
-from core.config import settings
+from proppulse_os.core.config import settings
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from core.database import Base, get_db
-from api.main import app
+from proppulse_os.core.database import Base, get_db
+from proppulse_os.lead_engine.main import app
 from unittest.mock import patch
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"

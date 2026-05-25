@@ -1,5 +1,5 @@
 import requests
-from core.logger import logger
+from proppulse_os.core.logger import logger
 
 def notify_external_crm(lead_id: int, lead_data: dict, webhook_url: str):
     """

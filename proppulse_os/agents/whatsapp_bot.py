@@ -1,10 +1,11 @@
 import time
 import random
 from sqlalchemy.orm import Session
-from core.database import SessionLocal
-from api import models
-from core.scoring import calculate_lead_score
-from automation.crm_sync import notify_external_crm
+from proppulse_os.core.database import SessionLocal
+from proppulse_os.lead_engine import models
+from proppulse_os.core.scoring import calculate_lead_score
+from proppulse_os.agents.crm_sync import notify_external_crm
+from proppulse_os.market_intel.engine import extract_lead_intent
 
 def trigger_whatsapp_qualification(lead_id: int):
     """
@@ -18,6 +19,10 @@ def trigger_whatsapp_qualification(lead_id: int):
         lead = db.query(models.Lead).filter(models.Lead.id == lead_id).first()
         if not lead:
             return
+
+        # AI Lead Brain Intent Extraction
+        extract_lead_intent(lead_id)
+        db.refresh(lead)
 
         # Record response time (simulated 2-5 seconds for the "instant" feel)
         delay = random.randint(2, 5)
@@ -43,11 +48,10 @@ def trigger_whatsapp_qualification(lead_id: int):
         score = calculate_lead_score(user_reply, True, has_budget)
 
         lead.qualification_score = score
-        lead.conversation_summary = f"Qualified lead interested in {lead.project.name if lead.project else 'property'}. Intent: High. Budget: Confirmed."
+        lead.conversation_summary = f"Qualified {lead.intent_type} lead for {lead.project.name}. Budget: {lead.budget_range}. Urgency: {lead.purchase_urgency}."
 
         if score >= 75:
             lead.status = "Qualified"
-            lead.budget_range = "1.5Cr - 2.5Cr"
             response = "Great! I've sent the pricing matrix to your email. Would you like to schedule a site visit this weekend?"
 
             # CRM Sync

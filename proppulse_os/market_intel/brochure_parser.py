@@ -1,7 +1,7 @@
 import json
 import random
-from core.database import SessionLocal
-from api import models
+from proppulse_os.core.database import SessionLocal
+from proppulse_os.lead_engine import models
 
 def mock_extract_project_details(file_path):
     """

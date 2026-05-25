@@ -1,6 +1,6 @@
 from typing import List, Optional
-from core.database import SessionLocal
-from api import models
+from proppulse_os.core.database import SessionLocal
+from proppulse_os.lead_engine import models
 
 def get_next_agent(brokerage_id: str) -> Optional[int]:
     """

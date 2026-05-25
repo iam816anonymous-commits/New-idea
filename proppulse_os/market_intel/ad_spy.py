@@ -1,7 +1,7 @@
 import random
 import time
-from core.database import SessionLocal
-from api import models
+from proppulse_os.core.database import SessionLocal
+from proppulse_os.lead_engine import models
 
 def scrape_competitor_ads(micro_market: str):
     """

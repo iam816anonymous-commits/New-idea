@@ -13,8 +13,10 @@ services:
     build: .
     ports:
       - "8501:8501"
-    command: streamlit run dashboard/app.py --server.port 8501
+    command: streamlit run proppulse_os/dashboard/app.py --server.port 8501 --server.address 0.0.0.0
     depends_on:
       - api
+    environment:
+      - DATABASE_URL=sqlite:///./proppulse.db
     volumes:
       - .:/app
