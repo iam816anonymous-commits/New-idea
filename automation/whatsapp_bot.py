@@ -43,6 +43,7 @@ def trigger_whatsapp_qualification(lead_id: int):
         score = calculate_lead_score(user_reply, True, has_budget)
 
         lead.qualification_score = score
+        lead.conversation_summary = f"Qualified lead interested in {lead.project.name if lead.project else 'property'}. Intent: High. Budget: Confirmed."
 
         if score >= 75:
             lead.status = "Qualified"

@@ -36,6 +36,7 @@ class Lead(Base):
     assigned_agent_id = Column(Integer, nullable=True)
     source = Column(String, default="Meta Ads")
     status = Column(String, default="New")
+    conversation_summary = Column(String, nullable=True)
     qualification_score = Column(Integer, default=0)
     chat_history = Column(Text, nullable=True)
     budget_range = Column(String, nullable=True)

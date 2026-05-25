@@ -12,3 +12,5 @@ python-multipart
 pytest
 httpx
 pytest-asyncio
+plotly
+psycopg2-binary
